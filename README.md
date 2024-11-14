@@ -106,13 +106,16 @@ from variant_utils.get_gene_info import get_gene_info
 from variant_utils.gnomad_utils import queryGnomAD
 
 brca1_info = get_gene_info("BRCA1")
-brca1_gnomad_variants = queryGnomAD("GRCh38",brca1_info.CHROM, brca1_info.chr_start, brca1_info.chr_end, brca1.HGNC_ID,"external_tools.json")
+brca1_gnomad_variants = queryGnomAD("GRCh38",brca1_info.CHROM, brca1_info.chr_start, brca1_info.chr_end, brca1_info.HGNC_ID,"external_tools.json")
 ```
 
 ### Fetch ClinVar variants for a gene
 ```python
 from pathlib import Path
 from variant_utils.get_gene_info import get_gene_info
+from variant_utils.clinvar_utils import queryClinVarVCF
+import urllib.request
+
 brca1_info = get_gene_info("BRCA1")
 # set destination to save/reload ClinVar
 cache_dir = Path(".cache")
