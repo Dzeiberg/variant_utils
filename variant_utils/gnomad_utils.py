@@ -68,15 +68,15 @@ def queryGnomAD(assembly, CHROM,START,STOP,HGNC_ID,external_config_filepath,**kw
     gnomAD_genomes_filepath = gnomad_vcf_root / f"genomes/gnomad.genomes.{release_version}.sites.{chr}{CHROM}.vcf.bgz"
     exomes_output_File = write_dir / f"selectvariants_{str(datetime.now()).replace(' ','_')}.exomes.vcf"
     genomes_output_File = write_dir / f"selectvariants_{str(datetime.now()).replace(' ','_')}.genomes.vcf"
-    cmd = f"gatk SelectVariants -V {gnomAD_exomes_filepath} -L {chr}{CHROM}:{START}-{STOP} --select-type-to-include SNP --exclude-filtered --output {exomes_output_File}"
+    cmd = f"{external_tools.get('gatk')} SelectVariants -V {gnomAD_exomes_filepath} -L {chr}{CHROM}:{START}-{STOP} --select-type-to-include SNP --exclude-filtered --output {exomes_output_File}"
     subprocess.run(cmd.split(" "))
-    cmd = f"gatk SelectVariants -V {gnomAD_genomes_filepath} -L {chr}{CHROM}:{START}-{STOP} --select-type-to-include SNP --exclude-filtered --output {genomes_output_File}"
+    cmd = f"{external_tools.get('gatk')} SelectVariants -V {gnomAD_genomes_filepath} -L {chr}{CHROM}:{START}-{STOP} --select-type-to-include SNP --exclude-filtered --output {genomes_output_File}"
     subprocess.run(cmd.split(" "))
     output_File = write_dir / f"combinevariants_{str(datetime.now()).replace(' ','_')}.vcf"
     cmd = f'{java} -jar {picard_filepath} MergeVcfs I={exomes_output_File} I={genomes_output_File} O={output_File}'
     subprocess.run(cmd.split(" "))
     tsvout = str(output_File).replace('.vcf','.tsv')
-    variants2table = f"gatk VariantsToTable -V {output_File} -F CHROM -F POS -F ID -F REF -F ALT -F QUAL -F FILTER -ASF AC -ASF AF -ASF vep -O {tsvout}"
+    variants2table = f"{external_tools.get('gatk')} VariantsToTable -V {output_File} -F CHROM -F POS -F ID -F REF -F ALT -F QUAL -F FILTER -ASF AC -ASF AF -ASF vep -O {tsvout}"
     subprocess.run(variants2table.split(" "))
     gnomAD_df = pd.read_csv(tsvout,delimiter='\t')
     vep_columns = get_vep_columns_from_vcf_header(output_File)
