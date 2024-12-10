@@ -2,9 +2,7 @@
 > Utilities for querying external variant databases
 
 ## Required External Tools
-- [gatk](https://github.com/broadinstitute/gatk/releases) must be installed
-- [Picard](https://broadinstitute.github.io/picard/) must be installed
-- java (see Picard install instructions)
+- docker
 
 ## Required External Data
 - gnomAD v4 (if using GRCh38 mappings)
@@ -72,20 +70,6 @@
     └── spliceai_scores.raw.snv.hg38.vcf.gz.tbi
     ```
 
-## External Config File
-Create `external_tools.json` with the following example structure:
-
-```json
-{
-    "java" : "/usr/bin/java",
-    "gatk" : "/path/to/gatk-4.4.0.0/gatk",
-    "picard_filepath": "/path/to/picard/build/libs/picard.jar",
-    "gnomad_v4_vcf_root": "/data/dbs/gnomad/release/v4.1.0/",
-    "gnomad_v2_vcf_root": "/data/dbs/gnomad/release/v2.1.1/",
-    "spliceAIRoot" : "/data/dbs/spliceAI/"
-}
-```
-
 ## Install
 ```bash
 cd variant_utils
@@ -106,7 +90,7 @@ from variant_utils.get_gene_info import get_gene_info
 from variant_utils.gnomad_utils import queryGnomAD
 
 brca1_info = get_gene_info("BRCA1")
-brca1_gnomad_variants = queryGnomAD("GRCh38",brca1_info.CHROM, brca1_info.chr_start, brca1_info.chr_end, brca1_info.HGNC_ID,"external_tools.json")
+brca1_gnomad_variants = queryGnomAD("GRCh38",brca1_info.CHROM, brca1_info.chr_start, brca1_info.chr_end, brca1_info.HGNC_ID,"/path/to/gnomAD")
 ```
 
 ### Fetch ClinVar variants for a gene
@@ -128,5 +112,5 @@ if not clinvar_filepath.exists():
 if not idx_filepath.exists():
     urllib.request.urlretrieve(f"https://ftp.ncbi.nlm.nih.gov/pub/clinvar/vcf_GRCh38/weekly/clinvar_20181217.vcf.gz.tbi",str(idx_filepath))
 
-brca1_clinvar_variants = queryClinVarVCF(str(clinvar_filepath), brca1_info.CHROM, brca1_info.chr_start, brca1_info.chr_end, "external_tools.json",write_dir=".cache")
+brca1_clinvar_variants = queryClinVarVCF(str(clinvar_filepath), brca1_info.CHROM, brca1_info.chr_start, brca1_info.chr_end,write_dir=".cache")
 ```
