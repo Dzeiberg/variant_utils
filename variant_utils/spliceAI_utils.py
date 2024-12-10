@@ -4,7 +4,7 @@ from pathlib import Path
 import subprocess
 import pandas as pd
 
-def querySpliceAI(assembly:str, chrom:str, position_min:int, position_max:int,external_config_filepath:str|Path,**kwargs):
+def querySpliceAI(assembly:str, chrom:str, position_min:int, position_max:int,spliceAIRoot:str|Path,**kwargs):
     """
     Query SpliceAI for spliceAI scores in a region of the genome
 
@@ -13,27 +13,22 @@ def querySpliceAI(assembly:str, chrom:str, position_min:int, position_max:int,ex
     - chrom: str : The chromosome for which to query SpliceAI
     - position_min: int : The minimum position in the chromosome for which to query SpliceAI
     - position_max: int : The maximum position in the chromosome for which to query SpliceAI
-    - external_config_filepath : str|Path : Path to the external tools configuration file
-
-    Required kwargs:
-    - spliceAIFilePath: str : Path to the SpliceAI VCF file
+    - spliceAIRoot : str|Path : Path to the spliceAI VCF files
 
     Optional kwargs:
     - cache_dir: str : Path to the directory where the output files will be written : default "/tmp"
     
     """
-    external_tools = read_external_config(external_config_filepath)
-    spliceAIRoot = Path(external_tools.get("spliceAIRoot"))
+    spliceAIRoot = Path(spliceAIRoot)
     if assembly == 'GRCh38':
         spliceAI_filepath = spliceAIRoot / "spliceai_scores.raw.snv.hg38.vcf.gz"
     elif assembly == 'GRCh37':
         spliceAI_filepath = spliceAIRoot / "spliceai_scores.raw.snv.hg19.vcf.gz"
-    assert spliceAI_filepath.exists(), "spliceAI_filepath does not exist"
+    assert spliceAI_filepath.exists(), f"spliceAI_filepath does not exist, {spliceAI_filepath}"
     cache_dir = Path(kwargs.get('cache_dir',"/tmp/"))
     cache_dir.mkdir(exist_ok=True)
     output_filepath = cache_dir / f'splice_ai_query_result.{str(datetime.now()).replace(" ","_")}.vcf'
-    # cmd = f"gatk SelectVariants -V {spliceAI_filepath} -L {chrom}:{max(position_min,1)}-{position_max} --output {output_filepath}"
-    cmd = f"docker run -v {spliceAI_filepath}:/mnt/spliceAI.vcf -v {output_filepath}:/mnt/output.vcf broadinstitute/gatk gatk SelectVariants -V /mnt/spliceAI.vcf -L {chrom}:{max(position_min,1)}-{position_max} --output /mnt/output.vcf"
+    cmd = f"docker run -v {spliceAI_filepath.parent}:/mnt -v {output_filepath.parent}:/out broadinstitute/gatk gatk SelectVariants -V /mnt/{spliceAI_filepath.name} -L {chrom}:{max(position_min,1)}-{position_max} --output /out/{output_filepath.name}"
     subprocess.run(cmd.split(" "))
     result_df = pd.read_csv(output_filepath,comment='#',delimiter='\t',header=None,
                     names='CHROM POS ID REF ALT QUAL FILTER INFO'.split(" "),

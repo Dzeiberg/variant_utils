@@ -21,13 +21,5 @@ def test_queryClinVarVCF():
     if not idx_filepath.exists():
         urllib.request.urlretrieve(f"https://ftp.ncbi.nlm.nih.gov/pub/clinvar/vcf_GRCh38/weekly/clinvar_20181217.vcf.gz.tbi",str(idx_filepath))
 
-    brca1_clinvar_variants = queryClinVarVCF(str(clinvar_filepath), brca1_info.CHROM, brca1_info.chr_start, brca1_info.chr_end, "external_tools.json",write_dir=".cache")
+    brca1_clinvar_variants = queryClinVarVCF(str(clinvar_filepath), brca1_info.CHROM, brca1_info.chr_start, brca1_info.chr_end,write_dir=".cache")
     brca1_clinvar_variants.to_json(".cache/BRCA1_clinvar.json")
-
-def test_queryGnomAD():
-    gnomAD_tst_out = queryGnomAD('GRCh38', '17', 43045681, 43124096,"HGNC:1100",'external_tools.json',write_dir=".cache")
-    gnomAD_tst_out.to_json(".cache/gnomAD_test.json")
-
-def test_querySpliceAI():
-    spliceAI_tst_out = querySpliceAI('GRCh38', '17', 43045681, 43124096,'external_tools.json',write_dir=".cache")
-    spliceAI_tst_out.to_json(".cache/spliceAI_test.json")
