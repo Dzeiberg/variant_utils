@@ -82,7 +82,7 @@ def queryGnomAD(assembly, CHROM,START,STOP,HGNC_ID,gnomad_vcf_root,**kwargs):
     gnomAD_df = pd.merge(gnomAD_df,vep_df,left_index=True,right_on='index',validate='one_to_many')
     gene_df = gnomAD_df[gnomAD_df.HGNC_ID == HGNC_ID]
     gene_df = gene_df.assign(CHROM=gene_df.CHROM.astype(str).str.replace("chr",""),
-                                POS=gene_df.POS.astype(str),
+                                POS=gene_df.POS.astype(int).astype(str),
                                 REF=gene_df.REF.astype(str),
                                 ALT=gene_df.ALT.astype(str))
     return gene_df
