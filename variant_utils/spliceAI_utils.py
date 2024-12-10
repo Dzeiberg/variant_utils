@@ -19,7 +19,7 @@ def querySpliceAI(assembly:str, chrom:str, position_min:int, position_max:int,ex
     - spliceAIFilePath: str : Path to the SpliceAI VCF file
 
     Optional kwargs:
-    - write_dir: str : Path to the directory where the output files will be written : default "/tmp"
+    - cache_dir: str : Path to the directory where the output files will be written : default "/tmp"
     
     """
     external_tools = read_external_config(external_config_filepath)
@@ -29,9 +29,9 @@ def querySpliceAI(assembly:str, chrom:str, position_min:int, position_max:int,ex
     elif assembly == 'GRCh37':
         spliceAI_filepath = spliceAIRoot / "spliceai_scores.raw.snv.hg19.vcf.gz"
     assert spliceAI_filepath.exists(), "spliceAI_filepath does not exist"
-    write_dir = Path(kwargs.get('write_dir',"/tmp"))
-    write_dir.mkdir(exist_ok=True)
-    output_filepath = write_dir / f'splice_ai_query_result.{str(datetime.now()).replace(" ","_")}.vcf'
+    cache_dir = Path(kwargs.get('cache_dir',"/tmp/"))
+    cache_dir.mkdir(exist_ok=True)
+    output_filepath = cache_dir / f'splice_ai_query_result.{str(datetime.now()).replace(" ","_")}.vcf'
     cmd = f"gatk SelectVariants -V {spliceAI_filepath} -L {chrom}:{max(position_min,1)}-{position_max} --output {output_filepath}"
     subprocess.run(cmd.split(" "))
     result_df = pd.read_csv(output_filepath,comment='#',delimiter='\t',header=None,
@@ -42,5 +42,4 @@ def querySpliceAI(assembly:str, chrom:str, position_min:int, position_max:int,ex
     if kwargs.get('gene_name',None) is not None:
         result_df = result_df.assign(gene_name=result_df.INFO.str.split("|").str[1])
         result_df = result_df[result_df.gene_name == kwargs['gene_name']]
-    result_df.to_csv(write_dir / f"splice_ai_match_CHR{chrom}_{position_min}_{position_max}.tsv",sep='\t',index=False)
     return result_df

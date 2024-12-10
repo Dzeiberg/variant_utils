@@ -68,5 +68,8 @@ def queryClinVarVCF(clinvar_filepath:str|Path, CHROM : str,START: int,STOP : int
         clinVar_df = clinVar_df[clinVar_df.GENEINFO == f"{gene_name}:{gene_id}"]
 
     clinVar_df = annotate_variants(clinVar_df)
-    clinVar_df.rename(columns={"#CHROM":'CHROM'},inplace=True)
+    clinVar_df = clinVar_df.assign(CHROM=clinVar_df.loc[:,'CHROM'].astype(str),
+                            POS=clinVar_df.loc[:,'POS'].astype(str),
+                            REF=clinVar_df.loc[:,'REF'].astype(str),
+                            ALT=clinVar_df.loc[:,'ALT'].astype(str))
     return clinVar_df
