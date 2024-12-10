@@ -54,13 +54,17 @@ def queryClinVarVCF(clinvar_filepath:str|Path, CHROM : str,START: int,STOP : int
     assert filepath.exists(), "filepath {} does not exist".format(filepath)
     write_dir = Path(kwargs.get("write_dir","/tmp"))
     write_dir.mkdir(exist_ok=True)
-    external_tools = read_external_config(external_tools_filepath)
     output_file = write_dir / f"ClinVar_selectvariants_chr{CHROM}:{START}-{STOP}.vcf"
-    cmd = f"{external_tools['gatk']} SelectVariants -V {filepath} -L {CHROM}:{START}-{STOP} --exclude-filtered --output {output_file}"
+    # external_tools = read_external_config(external_tools_filepath)
+    
+    # cmd = f"{external_tools['gatk']} SelectVariants -V {filepath} -L {CHROM}:{START}-{STOP} --exclude-filtered --output {output_file}"
+    cmd = f"docker run -v {filepath}:/mnt/clinvar.vcf -v {output_file}:/mnt/output.vcf broadinstitute/gatk gatk SelectVariants -V /mnt/clinvar.vcf -L {CHROM}:{START}-{STOP} --exclude-filtered --output /mnt/output.vcf"
     subprocess.run(cmd.split(" "))
 
     tsvout = str(output_file).replace('.vcf','.tsv')
-    variants2table = f"{external_tools['gatk']} VariantsToTable -V {output_file} -O {tsvout}"
+    # variants2table = f"{external_tools['gatk']} VariantsToTable -V {output_file} -O {tsvout}"
+    # subprocess.run(variants2table.split(" "))
+    variants2table = f"docker run -v {output_file}:/mnt/output.vcf -v {tsvout}:/mnt/output.tsv broadinstitute/gatk gatk VariantsToTable -V /mnt/output.vcf -O /mnt/output.tsv"
     subprocess.run(variants2table.split(" "))
 
     clinVar_df = pd.read_csv(tsvout,delimiter='\t')

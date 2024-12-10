@@ -32,7 +32,8 @@ def querySpliceAI(assembly:str, chrom:str, position_min:int, position_max:int,ex
     cache_dir = Path(kwargs.get('cache_dir',"/tmp/"))
     cache_dir.mkdir(exist_ok=True)
     output_filepath = cache_dir / f'splice_ai_query_result.{str(datetime.now()).replace(" ","_")}.vcf'
-    cmd = f"gatk SelectVariants -V {spliceAI_filepath} -L {chrom}:{max(position_min,1)}-{position_max} --output {output_filepath}"
+    # cmd = f"gatk SelectVariants -V {spliceAI_filepath} -L {chrom}:{max(position_min,1)}-{position_max} --output {output_filepath}"
+    cmd = f"docker run -v {spliceAI_filepath}:/mnt/spliceAI.vcf -v {output_filepath}:/mnt/output.vcf broadinstitute/gatk gatk SelectVariants -V /mnt/spliceAI.vcf -L {chrom}:{max(position_min,1)}-{position_max} --output /mnt/output.vcf"
     subprocess.run(cmd.split(" "))
     result_df = pd.read_csv(output_filepath,comment='#',delimiter='\t',header=None,
                     names='CHROM POS ID REF ALT QUAL FILTER INFO'.split(" "),

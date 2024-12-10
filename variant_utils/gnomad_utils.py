@@ -52,9 +52,9 @@ def queryGnomAD(assembly, CHROM,START,STOP,HGNC_ID,external_config_filepath,**kw
     external_tools = read_external_config(external_config_filepath)
     write_dir = Path(kwargs.get("write_dir","/tmp"))
     write_dir.mkdir(exist_ok=True)
-    java = Path(external_tools.get("java"))
-    picard_filepath = Path(external_tools.get("picard_filepath"))
-    assert picard_filepath.exists(), "picard_filepath does not exist"
+    # java = Path(external_tools.get("java"))
+    # picard_filepath = Path(external_tools.get("picard_filepath"))
+    # assert picard_filepath.exists(), "picard_filepath does not exist"
 
     release_version = "v4.1" if assembly == "GRCh38" else "r2.1.1"
     if release_version == "r2.1.1":
@@ -68,15 +68,19 @@ def queryGnomAD(assembly, CHROM,START,STOP,HGNC_ID,external_config_filepath,**kw
     gnomAD_genomes_filepath = gnomad_vcf_root / f"genomes/gnomad.genomes.{release_version}.sites.{chr}{CHROM}.vcf.bgz"
     exomes_output_File = write_dir / f"selectvariants_{str(datetime.now()).replace(' ','_')}.exomes.vcf"
     genomes_output_File = write_dir / f"selectvariants_{str(datetime.now()).replace(' ','_')}.genomes.vcf"
-    cmd = f"{external_tools.get('gatk')} SelectVariants -V {gnomAD_exomes_filepath} -L {chr}{CHROM}:{START}-{STOP} --select-type-to-include SNP --exclude-filtered --output {exomes_output_File}"
+    # cmd = f"{external_tools.get('gatk')} SelectVariants -V {gnomAD_exomes_filepath} -L {chr}{CHROM}:{START}-{STOP} --select-type-to-include SNP --exclude-filtered --output {exomes_output_File}"
+    cmd = f"docker run -v {gnomAD_exomes_filepath}:/mnt/exomes.vcf -v {exomes_output_File}:/mnt/exomes_output.vcf broadinstitute/gatk gatk SelectVariants -V /mnt/exomes.vcf -L {chr}{CHROM}:{START}-{STOP} --select-type-to-include SNP --exclude-filtered --output /mnt/exomes_output.vcf"
     subprocess.run(cmd.split(" "))
-    cmd = f"{external_tools.get('gatk')} SelectVariants -V {gnomAD_genomes_filepath} -L {chr}{CHROM}:{START}-{STOP} --select-type-to-include SNP --exclude-filtered --output {genomes_output_File}"
+    # cmd = f"{external_tools.get('gatk')} SelectVariants -V {gnomAD_genomes_filepath} -L {chr}{CHROM}:{START}-{STOP} --select-type-to-include SNP --exclude-filtered --output {genomes_output_File}"
+    cmd = f"docker run -v {gnomAD_genomes_filepath}:/mnt/genomes.vcf -v {genomes_output_File}:/mnt/genomes_output.vcf broadinstitute/gatk gatk SelectVariants -V /mnt/genomes.vcf -L {chr}{CHROM}:{START}-{STOP} --select-type-to-include SNP --exclude-filtered --output /mnt/genomes_output.vcf"
     subprocess.run(cmd.split(" "))
     output_File = write_dir / f"combinevariants_{str(datetime.now()).replace(' ','_')}.vcf"
-    cmd = f'{java} -jar {picard_filepath} MergeVcfs I={exomes_output_File} I={genomes_output_File} O={output_File}'
+    # cmd = f'{java} -jar {picard_filepath} MergeVcfs I={exomes_output_File} I={genomes_output_File} O={output_File}'
+    cmd = f"docker run -v {exomes_output_File}:/mnt/exomes_output.vcf -v {genomes_output_File}:/mnt/genomes_output.vcf -v {output_File}:/mnt/output.vcf broadinstitute/gatk gatk MergeVcfs I=/mnt/exomes_output.vcf I=/mnt/genomes_output.vcf O=/mnt/output.vcf"
     subprocess.run(cmd.split(" "))
     tsvout = str(output_File).replace('.vcf','.tsv')
-    variants2table = f"{external_tools.get('gatk')} VariantsToTable -V {output_File} -F CHROM -F POS -F ID -F REF -F ALT -F QUAL -F FILTER -ASF AC -ASF AF -ASF vep -O {tsvout}"
+    # variants2table = f"{external_tools.get('gatk')} VariantsToTable -V {output_File} -F CHROM -F POS -F ID -F REF -F ALT -F QUAL -F FILTER -ASF AC -ASF AF -ASF vep -O {tsvout}"
+    variants2table = f"docker run -v {output_File}:/mnt/output.vcf -v {tsvout}:/mnt/output.tsv broadinstitute/gatk gatk VariantsToTable -V /mnt/output.vcf -F CHROM -F POS -F ID -F REF -F ALT -F QUAL -F FILTER -ASF AC -ASF AF -ASF vep -O /mnt/output.tsv"
     subprocess.run(variants2table.split(" "))
     gnomAD_df = pd.read_csv(tsvout,delimiter='\t')
     vep_columns = get_vep_columns_from_vcf_header(output_File)
